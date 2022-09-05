@@ -1,3 +1,4 @@
+import queue
 import discord
 from discord.ext import commands
 import time
@@ -97,8 +98,8 @@ async def 프로필(ctx):
 
 load_dotenv()
 
-@bot.command()
-async def join(ctx):
+@bot.command(aliases = ['join', 'j', 'ㅓ'])
+async def Join(ctx):
     channel = ctx.message.author.voice.channel
     voice = get(bot.voice_clients, guild=ctx.guild)
     if voice and voice.is_connected():
@@ -107,69 +108,19 @@ async def join(ctx):
         voice = await channel.connect()
 
 
-@bot.command()
-async def j(ctx):
-    channel = ctx.message.author.voice.channel
-    voice = get(bot.voice_clients, guild=ctx.guild)
-    if voice and voice.is_connected():
-        await voice.move_to(channel)
-    else:
-        voice = await channel.connect()
-
-
-@bot.command()
-async def play(ctx, url):
+@bot.command(aliases = ['play', 'p', 'ㅔ'])
+async def Play(ctx, url):
     YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
     FFMPEG_OPTIONS = {
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
     voice = get(bot.voice_clients, guild=ctx.guild)
-    
 
     channel = ctx.message.author.voice.channel
     voice = get(bot.voice_clients, guild=ctx.guild)
-    
     if voice and voice.is_connected():
         await voice.move_to(channel)
     else:
         voice = await channel.connect()
-
-        YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
-    FFMPEG_OPTIONS = {
-        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
-    voice = get(bot.voice_clients, guild=ctx.guild)
-
-    if not voice.is_playing():
-        with YoutubeDL(YDL_OPTIONS) as ydl:
-            info = ydl.extract_info(url, download=False)
-        URL = info['url']
-        voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-        voice.is_playing()
-        await ctx.send('Bot is playing')
-
-    else:
-        await ctx.send("Bot is already playing")
-        return
-    
-
-    if not voice.is_playing():
-        with YoutubeDL(YDL_OPTIONS) as ydl:
-            info = ydl.extract_info(url, download=False)
-        URL = info['url']
-        voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-        voice.is_playing()
-        await ctx.send('Bot is playing')
-
-    else:
-        await ctx.send("Bot is already playing")
-        return
-
-
-@bot.command()
-async def p(ctx, url):
-    YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
-    FFMPEG_OPTIONS = {
-        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
-    voice = get(bot.voice_clients, guild=ctx.guild)
 
     if not voice.is_playing():
         with YoutubeDL(YDL_OPTIONS) as ydl:
@@ -202,6 +153,15 @@ async def pause(ctx):
         await ctx.send('Bot has been paused')
 
 
+@bot.command(aliases = ['skip', 's', 'ㄴ'])
+async def Skip(ctx):
+    voice = get(bot.voice_clients, guild=ctx.guild)
+
+    if voice.is_playing():
+        voice.stop()
+
+
+
 @bot.command()
 async def stop(ctx):
     voice = get(bot.voice_clients, guild=ctx.guild)
@@ -210,13 +170,6 @@ async def stop(ctx):
         voice.stop()
 
 
-@bot.command()
-async def skip(ctx):
-    voice = get(bot.voice_clients, guild=ctx.guild)
-
-    if voice.is_playing():
-        voice.stop()
-         
 
 @bot.command()
 async def leave(ctx):
@@ -248,4 +201,4 @@ async def clear(ctx):
 
 
 
-bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.GVhnXV.eEPaFf9F2bkwL1--R07zuccFZoN9S5-u3zlqvE')
+bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.GHm8C0.efVt1xboIzP_7U10U_Rc9AXDtm_ukU3vAQKbKk')
