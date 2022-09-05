@@ -91,6 +91,12 @@ async def 프로필(ctx):
         await ctx.send(embed=embed)
 
 
+@bot.command()
+async def 안녕(ctx):
+        await ctx.send("안녕하세요")
+
+
+
 
 ####################################################################################################
 # music funsion
@@ -162,7 +168,7 @@ async def Skip(ctx):
 
 
 
-@bot.command()
+@bot.command(aliases = ['st'])
 async def stop(ctx):
     voice = get(bot.voice_clients, guild=ctx.guild)
 
@@ -201,4 +207,4 @@ async def clear(ctx):
 
 
 
-bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.GHm8C0.efVt1xboIzP_7U10U_Rc9AXDtm_ukU3vAQKbKk')
+bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.G7n-kl.cc93wNWUm-SOemHEbqvZ5yNPzkls5RvVKNMWos')
