@@ -1,4 +1,5 @@
 import queue
+from turtle import title
 import discord
 from discord.ext import commands
 import time
@@ -9,12 +10,13 @@ import re
 import random
 import urllib
 import urllib.request
-import bs4
+import requests
 from dotenv import load_dotenv
 from discord.utils import get
 from discord import FFmpegPCMAudio
 from discord import TextChannel
 from youtube_dl import YoutubeDL
+from pytube import YouTube
 
 
 intents = discord.Intents.default()
@@ -103,6 +105,7 @@ async def 안녕(ctx):
 ####################################################################################################
 
 load_dotenv()
+queue = []
 
 @bot.command(aliases = ['join', 'j', 'ㅓ'])
 async def Join(ctx):
@@ -134,7 +137,20 @@ async def Play(ctx, url):
         URL = info['url']
         voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
         voice.is_playing()
-        await ctx.send('Bot is playing')
+        
+        message = ctx.message.content
+
+        if message.startswith('~play'):
+            link = message[6:]
+
+        if message.startswith('~p') or message.startswith('~ㅔ'):
+            link = message[3: ]
+    
+        yt = YouTube(link)
+        title = yt.title
+        await ctx.send(title + ' is playing')
+
+        queue.append(title)
 
     else:
         await ctx.send("Bot is already playing")
@@ -175,6 +191,22 @@ async def stop(ctx):
     if voice.is_playing():
         voice.stop()
 
+@bot.command(aliases = ['queue', 'q', 'ㅂ'])
+async def Queue(ctx):
+    await ctx.send(queue)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 @bot.command()
@@ -207,4 +239,4 @@ async def clear(ctx):
 
 
 
-bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.G7n-kl.cc93wNWUm-SOemHEbqvZ5yNPzkls5RvVKNMWos')
+bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.GMPLbM.hyP8expOwRSSONA0KaHwungevMTfcXUXuIkMqY')
