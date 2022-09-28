@@ -105,7 +105,8 @@ async def 안녕(ctx):
 ####################################################################################################
 
 load_dotenv()
-queue = []
+link_queue = []
+title_queue = []
 
 @bot.command(aliases = ['join', 'j', 'ㅓ'])
 async def Join(ctx):
@@ -132,12 +133,6 @@ async def Play(ctx, url):
         voice = await channel.connect()
 
     if not voice.is_playing():
-        with YoutubeDL(YDL_OPTIONS) as ydl:
-            info = ydl.extract_info(url, download=False)
-        URL = info['url']
-        voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-        voice.is_playing()
-        
         message = ctx.message.content
 
         if message.startswith('~play'):
@@ -145,12 +140,27 @@ async def Play(ctx, url):
 
         if message.startswith('~p') or message.startswith('~ㅔ'):
             link = message[3: ]
-    
-        yt = YouTube(link)
-        title = yt.title
-        await ctx.send(title + ' is playing')
 
-        queue.append(title)
+        link_queue.append(link)
+
+        # with YoutubeDL(YDL_OPTIONS) as ydl:
+        #     info = ydl.extract_info(url, download=False)
+        URL = link_queue[1] # info['url']
+        voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+        voice.is_playing()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     else:
         await ctx.send("Bot is already playing")
@@ -191,22 +201,10 @@ async def stop(ctx):
     if voice.is_playing():
         voice.stop()
 
+
 @bot.command(aliases = ['queue', 'q', 'ㅂ'])
 async def Queue(ctx):
     await ctx.send(queue)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 @bot.command()
