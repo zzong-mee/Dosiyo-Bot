@@ -25,15 +25,15 @@ intents = discord.Intents.default()
 intents.members = True
 bot_activity = activity=discord.Game(name="~도움 | Developing now...")
 
-bot = commands.Bot(command_prefix='~', status = discord.Status.online, activity = bot_activity, help_command=None, intents=intents) # status: online, idle, dnd, invisible, offline
+client = commands.Bot(command_prefix='~', status = discord.Status.online, activity = bot_activity, help_command=None, intents=intents) # status: online, idle, dnd, invisible, offline
 
 
-@bot.event
+@client.event
 async def on_ready():
     print("Dosiyo DEV 봇이 시작되었습니다.")
 
 
-@bot.event
+@client.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
     	await ctx.send("명령어를 찾지 못했어요")
@@ -45,14 +45,14 @@ async def on_command_error(ctx, error):
 # service funsion
 ####################################################################################################
 
-@bot.command()
+@client.command()
 async def 서버정보(ctx):
     embed = discord.Embed(title="반갑습니다 {}님! \n{} 서버의 구성원은 총 {} 명이고 \n어드민은 {} 입니다.".format(ctx.author.name, ctx.guild.name, ctx.guild.member_count, ctx.guild.owner.name), color = 0xffcfcf)
     embed.set_image(url = ctx.guild.icon_url)
     await ctx.send(embed=embed)
 
 
-@bot.command()
+@client.command()
 async def 주사위(ctx):
     dice = [':one:', ':two:', ':three:', ':four:', ':five:', ':six:']
     num = random.choice(dice)
@@ -64,13 +64,13 @@ async def 주사위(ctx):
     await ctx.send(embed=embed)
 
 
-@bot.command()
+@client.command()
 async def 검색(ctx):
     msg = ctx.message.content[4:]
     await ctx.send('구글: {} \n\n유튜브: {}'.format('https://www.google.com/search?q=' + msg + '&oq=' + msg + '&aqs=chrome..69i57j0l6j69i61.4099j0j7&sourceid=chrome&ie=UTF-8', 'https://www.youtube.com/results?search_query=' + msg))
 
 
-@bot.command()
+@client.command()
 async def 도움(ctx):
     embed = discord.Embed(title = """**반가워요! 전 '하와와 도시요'라고 해요!**""", color = 0xffcfcf)
 
@@ -83,7 +83,7 @@ async def 도움(ctx):
     await ctx.send(embed=embed)
 
 
-@bot.command()
+@client.command()
 async def 프로필(ctx):
         date = datetime.datetime.utcfromtimestamp(((int(ctx.author.id) >> 22) + 1420070400000) / 1000)
         embed = discord.Embed(color=0xffcfcf)
@@ -95,7 +95,7 @@ async def 프로필(ctx):
         await ctx.send(embed=embed)
 
 
-@bot.command()
+@client.command()
 async def 안녕(ctx):
         await ctx.send("안녕하세요")
 
@@ -150,40 +150,32 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
 def is_connected(ctx):
-    voice_bot = ctx.message.guild.voice_bot
-    return voice_bot and voice_bot.is_connected()
+    voice_client = ctx.message.guild.voice_client
+    return voice_client and voice_client.is_connected()
 
-# bot = commands.Bot(command_prefix='?')
-
-status = ['Jamming out to music!', 'Eating!', 'Sleeping!']
 queue = []
 loop = False
 
-@bot.command(name='ping', help='This command returns the latency')
-async def ping(ctx):
-    await ctx.send(f'**Pong!** Latency: {round(bot.latency * 1000)}ms')
+@client.event
+async def on_member_join(member):
+    channel = discord.utils.get(member.guild.channels, name='general')
+    await channel.send(f'Welcome {member.mention}!  Ready to jam out? See `?help` command for details!')
 
-@bot.command(name='hello', help='This command returns a random welcome message')
+@client.command(name='ping', help='This command returns the latency')
+async def ping(ctx):
+    await ctx.send(f'**Pong!** Latency: {round(client.latency * 1000)}ms')
+
+@client.command(name='hello', help='This command returns a random welcome message')
 async def hello(ctx):
     responses = ['***grumble*** Why did you wake me up?', 'Top of the morning to you lad!', 'Hello, how are you?', 'Hi', '**Wasssuup!**']
     await ctx.send(choice(responses))
 
-@bot.command(name='die', help='This command returns a random last words')
+@client.command(name='die', help='This command returns a random last words')
 async def die(ctx):
     responses = ['why have you brought my short life to an end', 'i could have done so much more', 'i have a family, kill them instead']
     await ctx.send(choice(responses))
 
-@bot.command(name='credits', help='This command returns the credits')
-async def credits(ctx):
-    await ctx.send('Made by `RK Coding`')
-    await ctx.send('Thanks to `DiamondSlasher` for coming up with the idea')
-    await ctx.send('Thanks to `KingSticky` for helping with the `?die` and `?creditz` command')
-
-@bot.command(name='creditz', help='This command returns the TRUE credits')
-async def creditz(ctx):
-    await ctx.send('**No one but me, lozer!**')
-
-@bot.command(name='join', help='This command makes the bot join the voice channel')
+@client.command(name='join', help='This command makes the bot join the voice channel')
 async def join(ctx):
     if not ctx.message.author.voice:
         await ctx.send("You are not connected to a voice channel")
@@ -194,12 +186,12 @@ async def join(ctx):
 
     await channel.connect()
     
-@bot.command(name='leave', help='This command stops the music and makes the bot leave the voice channel')
+@client.command(name='leave', help='This command stops the music and makes the bot leave the voice channel')
 async def leave(ctx):
-    voice_bot = ctx.message.guild.voice_bot
-    await voice_bot.disconnect()
+    voice_client = ctx.message.guild.voice_client
+    await voice_client.disconnect()
 
-@bot.command(name='loop', help='This command toggles loop mode')
+@client.command(name='loop', help='This command toggles loop mode')
 async def loop_(ctx):
     global loop
 
@@ -211,7 +203,7 @@ async def loop_(ctx):
         await ctx.send('Loop mode is now `True!`')
         loop = True
 
-@bot.command(name='play', help='This command plays music')
+@client.command(name='play', help='This command plays music')
 async def play(ctx):
     global queue
 
@@ -226,11 +218,11 @@ async def play(ctx):
     except: pass
 
     server = ctx.message.guild
-    voice_channel = server.voice_bot
+    voice_channel = server.voice_client
     
     try:
         async with ctx.typing():
-            player = await YTDLSource.from_url(queue[0], loop=bot.loop)
+            player = await YTDLSource.from_url(queue[0], loop=client.loop)
             voice_channel.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
             
             if loop:
@@ -243,35 +235,35 @@ async def play(ctx):
     except:
         await ctx.send('Nothing in your queue! Use `?queue` to add a song!')
 
-@bot.command(name='pause', help='This command pauses the song')
+@client.command(name='pause', help='This command pauses the song')
 async def pause(ctx):
     server = ctx.message.guild
-    voice_channel = server.voice_bot
+    voice_channel = server.voice_client
 
     voice_channel.pause()
 
-@bot.command(name='resume', help='This command resumes the song!')
+@client.command(name='resume', help='This command resumes the song!')
 async def resume(ctx):
     server = ctx.message.guild
-    voice_channel = server.voice_bot
+    voice_channel = server.voice_client
 
     voice_channel.resume()
 
-@bot.command(name='stop', help='This command stops the song!')
+@client.command(name='stop', help='This command stops the song!')
 async def stop(ctx):
     server = ctx.message.guild
-    voice_channel = server.voice_bot
+    voice_channel = server.voice_client
 
     voice_channel.stop()
 
-@bot.command(name='queue')
+@client.command(name='queue')
 async def queue_(ctx, url):
     global queue
 
     queue.append(url)
     await ctx.send(f'`{url}` added to queue!')
 
-@bot.command(name='remove')
+@client.command(name='remove')
 async def remove(ctx, number):
     global queue
 
@@ -282,13 +274,9 @@ async def remove(ctx, number):
     except:
         await ctx.send('Your queue is either **empty** or the index is **out of range**')
 
-@bot.command(name='view', help='This command shows the queue')
+@client.command(name='view', help='This command shows the queue')
 async def view(ctx):
     await ctx.send(f'Your queue is now `{queue}!`')
-
-@tasks.loop(seconds=20)
-async def change_status():
-    await bot.change_presence(activity=discord.Game(choice(status)))
 
 
 
@@ -301,7 +289,7 @@ async def change_status():
 #     await ctx.send("이 명령어는 서버 관리자만 사용할 수 있어요")
 #     return None
 
-@bot.command()
+@client.command()
 async def clear(ctx):
     if ctx.author != ctx.guild.owner:
         await ctx.send("이 명령어는 서버 관리자만 사용할 수 있어요")
@@ -316,4 +304,4 @@ async def clear(ctx):
 
 
 
-bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.GDgBxL.vvXmIYWSXZ291ZkJSlU1n2WotVY22abeEPJbmI')
+client.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.G7mUMX.p9rRr92Uj-BNCnDXzz0D0wNoeq6CSQRWhVnpkE')
