@@ -105,7 +105,7 @@ async def 안녕(ctx):
 ####################################################################################################
 
 load_dotenv()
-URL_queue = []
+link_queue = []
 title_queue = []
 
 @bot.command(aliases = ['join', 'j', 'ㅓ'])
@@ -133,12 +133,6 @@ async def Play(ctx, url):
         voice = await channel.connect()
 
     if not voice.is_playing():
-        with YoutubeDL(YDL_OPTIONS) as ydl:
-            info = ydl.extract_info(url, download=False)
-        URL = info['url']
-        voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-        voice.is_playing()
-        
         message = ctx.message.content
 
         if message.startswith('~play'):
@@ -146,16 +140,48 @@ async def Play(ctx, url):
 
         if message.startswith('~p') or message.startswith('~ㅔ'):
             link = message[3: ]
-    
+
+        link_queue.append(link)
+
         yt = YouTube(link)
         title = yt.title
-        await ctx.send(title + ' is playing')
-
         title_queue.append(title)
 
+        with YoutubeDL(YDL_OPTIONS) as ydl:
+            info = ydl.extract_info(url, download=False)
+        URL = info['url']
+        voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+        voice.is_playing()
+
+        await ctx.send(title + ' is playing')
+
+    # elif(voice.is_playing and link_queue[1]):
+    #     if message.startswith('~play'):
+    #         link = message[6:]
+
+    #     if message.startswith('~p') or message.startswith('~ㅔ'):
+    #         link = message[3: ]
+
+    #     link_queue.append(link)
+
+    #     yt = YouTube(link)
+    #     title = yt.title
+    #     title_queue.append(title)
+
     else:
-        await ctx.send("Bot is already playing")
-        return
+        message = ctx.message.content
+
+        if message.startswith('~play'):
+            link = message[6:]
+
+        if message.startswith('~p') or message.startswith('~ㅔ'):
+            link = message[3: ]
+
+        link_queue.append(link)
+
+        yt = YouTube(link)
+        title = yt.title
+        title_queue.append(title)
 
 
 @bot.command()
@@ -184,7 +210,6 @@ async def Skip(ctx):
         voice.stop()
 
 
-
 @bot.command(aliases = ['st'])
 async def stop(ctx):
     voice = get(bot.voice_clients, guild=ctx.guild)
@@ -195,7 +220,7 @@ async def stop(ctx):
 
 @bot.command(aliases = ['queue', 'q', 'ㅂ'])
 async def Queue(ctx):
-    await ctx.send(queue)
+    await ctx.send(title_queue)
 
 
 @bot.command()

@@ -1,7 +1,7 @@
 import queue
 from turtle import title
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import time
 import datetime
 import os
@@ -12,11 +12,13 @@ import urllib
 import urllib.request
 import requests
 from dotenv import load_dotenv
-from discord.utils import get
+from discord.utils import get   
 from discord import FFmpegPCMAudio
 from discord import TextChannel
-from youtube_dl import YoutubeDL
+import youtube_dl
 from pytube import YouTube
+from discord.voice_client import VoiceClient
+from random import choice
 
 
 intents = discord.Intents.default()
@@ -104,115 +106,189 @@ async def 안녕(ctx):
 # music funsion
 ####################################################################################################
 
-load_dotenv()
-link_queue = []
-title_queue = []
+youtube_dl.utils.bug_reports_message = lambda: ''
 
-@bot.command(aliases = ['join', 'j', 'ㅓ'])
-async def Join(ctx):
-    channel = ctx.message.author.voice.channel
-    voice = get(bot.voice_clients, guild=ctx.guild)
-    if voice and voice.is_connected():
-        await voice.move_to(channel)
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    def __init__(self, source, *, data, volume=0.5):
+        super().__init__(source, volume)
+
+        self.data = data
+
+        self.title = data.get('title')
+        self.url = data.get('url')
+
+    @classmethod
+    async def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+
+        if 'entries' in data:
+            # take first item from a playlist
+            data = data['entries'][0]
+
+        filename = data['url'] if stream else ytdl.prepare_filename(data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+
+def is_connected(ctx):
+    voice_bot = ctx.message.guild.voice_bot
+    return voice_bot and voice_bot.is_connected()
+
+# bot = commands.Bot(command_prefix='?')
+
+status = ['Jamming out to music!', 'Eating!', 'Sleeping!']
+queue = []
+loop = False
+
+@bot.command(name='ping', help='This command returns the latency')
+async def ping(ctx):
+    await ctx.send(f'**Pong!** Latency: {round(bot.latency * 1000)}ms')
+
+@bot.command(name='hello', help='This command returns a random welcome message')
+async def hello(ctx):
+    responses = ['***grumble*** Why did you wake me up?', 'Top of the morning to you lad!', 'Hello, how are you?', 'Hi', '**Wasssuup!**']
+    await ctx.send(choice(responses))
+
+@bot.command(name='die', help='This command returns a random last words')
+async def die(ctx):
+    responses = ['why have you brought my short life to an end', 'i could have done so much more', 'i have a family, kill them instead']
+    await ctx.send(choice(responses))
+
+@bot.command(name='credits', help='This command returns the credits')
+async def credits(ctx):
+    await ctx.send('Made by `RK Coding`')
+    await ctx.send('Thanks to `DiamondSlasher` for coming up with the idea')
+    await ctx.send('Thanks to `KingSticky` for helping with the `?die` and `?creditz` command')
+
+@bot.command(name='creditz', help='This command returns the TRUE credits')
+async def creditz(ctx):
+    await ctx.send('**No one but me, lozer!**')
+
+@bot.command(name='join', help='This command makes the bot join the voice channel')
+async def join(ctx):
+    if not ctx.message.author.voice:
+        await ctx.send("You are not connected to a voice channel")
+        return
+    
     else:
-        voice = await channel.connect()
+        channel = ctx.message.author.voice.channel
 
-
-@bot.command(aliases = ['play', 'p', 'ㅔ'])
-async def Play(ctx, url):
-    YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'True'}
-    FFMPEG_OPTIONS = {
-        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
-    voice = get(bot.voice_clients, guild=ctx.guild)
-
-    channel = ctx.message.author.voice.channel
-    voice = get(bot.voice_clients, guild=ctx.guild)
-    if voice and voice.is_connected():
-        await voice.move_to(channel)
-    else:
-        voice = await channel.connect()
-
-    if not voice.is_playing():
-        message = ctx.message.content
-
-        if message.startswith('~play'):
-            link = message[6:]
-
-        if message.startswith('~p') or message.startswith('~ㅔ'):
-            link = message[3: ]
-
-        link_queue.append(link)
-
-        yt = YouTube(link)
-        title = yt.title
-        title_queue.append(title)
-
-        with YoutubeDL(YDL_OPTIONS) as ydl:
-            info = ydl.extract_info(url, download=False)
-        URL = info['url']
-        voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
-        voice.is_playing()
-
-        await ctx.send(title + ' is playing')
-
-    else:
-        message = ctx.message.content
-
-        if message.startswith('~play'):
-            link = message[6:]
-
-        if message.startswith('~p') or message.startswith('~ㅔ'):
-            link = message[3: ]
-
-        link_queue.append(link)
-
-        yt = YouTube(link)
-        title = yt.title
-        title_queue.append(title)
-
-
-@bot.command()
-async def resume(ctx):
-    voice = get(bot.voice_clients, guild=ctx.guild)
-
-    if not voice.is_playing():
-        voice.resume()
-        await ctx.send('Bot is resuming')
-
-
-@bot.command()
-async def pause(ctx):
-    voice = get(bot.voice_clients, guild=ctx.guild)
-
-    if voice.is_playing():
-        voice.pause()
-        await ctx.send('Bot has been paused')
-
-
-@bot.command(aliases = ['skip', 's', 'ㄴ'])
-async def Skip(ctx):
-    voice = get(bot.voice_clients, guild=ctx.guild)
-
-    if voice.is_playing():
-        voice.stop()
-
-
-@bot.command(aliases = ['st'])
-async def stop(ctx):
-    voice = get(bot.voice_clients, guild=ctx.guild)
-
-    if voice.is_playing():
-        voice.stop()
-
-
-@bot.command(aliases = ['queue', 'q', 'ㅂ'])
-async def Queue(ctx):
-    await ctx.send(title_queue)
-
-
-@bot.command()
+    await channel.connect()
+    
+@bot.command(name='leave', help='This command stops the music and makes the bot leave the voice channel')
 async def leave(ctx):
-    await bot.voice_clients[0].disconnect()
+    voice_bot = ctx.message.guild.voice_bot
+    await voice_bot.disconnect()
+
+@bot.command(name='loop', help='This command toggles loop mode')
+async def loop_(ctx):
+    global loop
+
+    if loop:
+        await ctx.send('Loop mode is now `False!`')
+        loop = False
+    
+    else: 
+        await ctx.send('Loop mode is now `True!`')
+        loop = True
+
+@bot.command(name='play', help='This command plays music')
+async def play(ctx):
+    global queue
+
+    if not ctx.message.author.voice:
+        await ctx.send("You are not connected to a voice channel")
+        return
+    
+    else:
+        channel = ctx.message.author.voice.channel
+
+    try: await channel.connect()
+    except: pass
+
+    server = ctx.message.guild
+    voice_channel = server.voice_bot
+    
+    try:
+        async with ctx.typing():
+            player = await YTDLSource.from_url(queue[0], loop=bot.loop)
+            voice_channel.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+            
+            if loop:
+                queue.append(queue[0])
+
+            del(queue[0])
+            
+        await ctx.send('**Now playing:** {}'.format(player.title))
+
+    except:
+        await ctx.send('Nothing in your queue! Use `?queue` to add a song!')
+
+@bot.command(name='pause', help='This command pauses the song')
+async def pause(ctx):
+    server = ctx.message.guild
+    voice_channel = server.voice_bot
+
+    voice_channel.pause()
+
+@bot.command(name='resume', help='This command resumes the song!')
+async def resume(ctx):
+    server = ctx.message.guild
+    voice_channel = server.voice_bot
+
+    voice_channel.resume()
+
+@bot.command(name='stop', help='This command stops the song!')
+async def stop(ctx):
+    server = ctx.message.guild
+    voice_channel = server.voice_bot
+
+    voice_channel.stop()
+
+@bot.command(name='queue')
+async def queue_(ctx, url):
+    global queue
+
+    queue.append(url)
+    await ctx.send(f'`{url}` added to queue!')
+
+@bot.command(name='remove')
+async def remove(ctx, number):
+    global queue
+
+    try:
+        del(queue[int(number)])
+        await ctx.send(f'Your queue is now `{queue}!`')
+    
+    except:
+        await ctx.send('Your queue is either **empty** or the index is **out of range**')
+
+@bot.command(name='view', help='This command shows the queue')
+async def view(ctx):
+    await ctx.send(f'Your queue is now `{queue}!`')
+
+@tasks.loop(seconds=20)
+async def change_status():
+    await bot.change_presence(activity=discord.Game(choice(status)))
 
 
 
@@ -240,4 +316,4 @@ async def clear(ctx):
 
 
 
-bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.Gi4OQi.iC25y53mQPP12xthK1LNs-6lulpXP8eVZl94T0')
+bot.run('OTg0NTYxMDU3ODQ4Nzc4Nzky.GDgBxL.vvXmIYWSXZ291ZkJSlU1n2WotVY22abeEPJbmI')
